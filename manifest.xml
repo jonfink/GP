@@ -1,0 +1,15 @@
+<package>
+  <description brief="GP">
+
+     GP
+
+  </description>
+  <author>Jon Fink</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/GP</url>
+  <depend package="armadillo"/>
+
+</package>
+
+

@@ -1,0 +1,16 @@
+import os
+
+env = Environment (
+  CC = 'g++',
+  CPPFLAGS = '-ggdb -O1 -I/opt/armadillo/include -I/opt/local/include',
+  LINKFLAGS = '-framework Accelerate'
+)
+
+env.Program('test', ['test.cc'],
+            LIBS = ['armadillo', 'GP'],
+            LIBPATH = ['/opt/armadillo/lib', '.'])
+
+env.SharedLibrary('GP', ['GP.cc', 'KernelFunction.cc', 'MeanFunction.cc', 'CGOptimizer.cc'],
+            LIBS = ['armadillo', 'gsl'],
+            LIBPATH = ['/opt/armadillo/lib', '/opt/local/lib'])
+
