@@ -11,7 +11,7 @@ double f_eval_mean(const gsl_vector *x, void *param)
   GP *gp_obj = reinterpret_cast<GP*>(param);
   
   Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
-  for(int i=0; i < mean_param.n_elem; ++i) {
+  for(unsigned int i=0; i < mean_param.n_elem; ++i) {
     mean_param(i) = gsl_vector_get(x, i);
   }
 
@@ -27,7 +27,7 @@ void df_eval_mean(const gsl_vector *x, void *param, gsl_vector *g)
   GP *gp_obj = reinterpret_cast<GP*>(param);
   
   Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
-  for(int i=0; i < mean_param.n_elem; ++i) {
+  for(unsigned int i=0; i < mean_param.n_elem; ++i) {
     mean_param(i) = gsl_vector_get(x, i);
   }
   gp_obj->SetMeanFuncParams(mean_param);
@@ -35,7 +35,7 @@ void df_eval_mean(const gsl_vector *x, void *param, gsl_vector *g)
   Col<REAL> grad;
   gp_obj->GradLikelihoodMeanParams(grad);
 
-  for(int i=0; i < grad.n_elem; ++i) {
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
     gsl_vector_set(g, i, -grad(i));
   }
 }
@@ -51,7 +51,7 @@ double f_eval_kernel(const gsl_vector *x, void *param)
   GP *gp_obj = reinterpret_cast<GP*>(param);
   
   Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
-  for(int i=0; i < kernel_param.n_elem; ++i) {
+  for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
     kernel_param(i) = gsl_vector_get(x, i);
     if(kernel_param(i) < 1e-6) {
       return 1e6;
@@ -70,7 +70,7 @@ void df_eval_kernel(const gsl_vector *x, void *param, gsl_vector *g)
   GP *gp_obj = reinterpret_cast<GP*>(param);
   
   Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
-  for(int i=0; i < kernel_param.n_elem; ++i) {
+  for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
     kernel_param(i) = gsl_vector_get(x, i);
   }
   gp_obj->SetKernelFuncParams(kernel_param);
@@ -78,7 +78,7 @@ void df_eval_kernel(const gsl_vector *x, void *param, gsl_vector *g)
   Col<REAL> grad;
   gp_obj->GradLikelihoodKernelParams(grad);
 
-  for(int i=0; i < grad.n_elem; ++i) {
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
     gsl_vector_set(g, i, -grad(i));
   }
 }
@@ -118,7 +118,7 @@ void df_eval_noise(const gsl_vector *x, void *param, gsl_vector *g)
   Col<REAL> grad;
   gp_obj->GradLikelihoodNoise(grad);
 
-  for(int i=0; i < grad.n_elem; ++i) {
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
     gsl_vector_set(g, i, -grad(i));
   }
 }
@@ -163,7 +163,7 @@ void CGOptimizer::InitializeMean(const Col<REAL> &init, double step)
   my_func.params = (void*)this->gp;
 
   x = gsl_vector_alloc(init.n_elem);
-  for(int i=0; i < init.n_elem; ++i)
+  for(unsigned int i=0; i < init.n_elem; ++i)
     gsl_vector_set(x, i, init(i));
 
   T = gsl_multimin_fdfminimizer_conjugate_fr;
@@ -182,7 +182,7 @@ void CGOptimizer::InitializeKernel(const Col<REAL> &init, double step)
   my_func.params = (void*)this->gp;
 
   x = gsl_vector_alloc(init.n_elem);
-  for(int i=0; i < init.n_elem; ++i)
+  for(unsigned int i=0; i < init.n_elem; ++i)
     gsl_vector_set(x, i, init(i));
 
   T = gsl_multimin_fdfminimizer_conjugate_fr;
@@ -212,14 +212,14 @@ int CGOptimizer::Optimize(Col<REAL> &soln, int max_iterations)
       printf ("Minimum found at:\n");
 
     printf("%5d ", iter);
-    for(int i=0; i < my_func.n; ++i)
+    for(unsigned int i=0; i < my_func.n; ++i)
       printf("%.2f ", gsl_vector_get(s->x, i));
     printf("%10.5f\n", s->f);
   }
   while (status == GSL_CONTINUE && iter < max_iterations);
 
   soln.set_size(my_func.n);
-  for(int i=0; i < my_func.n; ++i) {
+  for(unsigned int i=0; i < my_func.n; ++i) {
     soln(i) = gsl_vector_get(s->x, i);
   }
 

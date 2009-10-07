@@ -33,7 +33,7 @@ void GP::SetMeanFuncParams(const Col<REAL>& param)
   this->mean->SetParams(param);
 
   this->meanvals.set_size(this->X.n_cols);
-  for(int i=0; i < this->X.n_cols; ++i)
+  for(unsigned int i=0; i < this->X.n_cols; ++i)
     this->meanvals(i) = this->mean->Eval(this->X.col(i));
 
   this->need_to_compute_alpha = true;
@@ -58,7 +58,7 @@ void GP::SetTraining(const Mat<REAL>& X, const Row<REAL> &y)
   this->y = y;
 
   this->meanvals.set_size(X.n_cols);
-  for(int i=0; i < X.n_cols; ++i)
+  for(unsigned int i=0; i < X.n_cols; ++i)
     this->meanvals(i) = this->mean->Eval(X.col(i));
 
   K += this->s2_n*eye<Mat<REAL> >(X.n_cols, X.n_cols);
@@ -81,7 +81,7 @@ void GP::AddTraining(const Mat<REAL>& X, const Row<REAL> &y)
   orig_n_cols = this->meanvals.n_cols;
   new_n_cols = orig_n_cols + X.n_cols;
   this->meanvals.set_size(new_n_cols);
-  for(int i=0; i < X.n_cols; ++i)
+  for(unsigned int i=0; i < X.n_cols; ++i)
     this->meanvals(orig_n_cols + i) = this->mean->Eval(X.col(i));
 
   // Extend X
@@ -164,7 +164,7 @@ void GP::GradLikelihoodMeanParams(Col<REAL> &grad)
 
   Col<REAL> tmp;
   Mat<REAL> grad_tmp(grad.n_rows, X.n_cols);
-  for(int i=0; i < X.n_cols; ++i) {
+  for(unsigned int i=0; i < X.n_cols; ++i) {
     this->mean->Grad(tmp, X.col(i));
     grad_tmp.col(i) = -tmp;
   }
@@ -185,7 +185,7 @@ void GP::HessianLikelihoodMeanParams(Mat<REAL> &hessian)
   Mat<REAL> grad_all(grad.n_elem, X.n_cols);
   std::vector<Col<REAL> > grad_tmp(X.n_cols);
   std::vector<Mat<REAL> > hessian_tmp(X.n_cols);
-  for(int i=0; i < X.n_cols; ++i) {
+  for(unsigned int i=0; i < X.n_cols; ++i) {
     grad_tmp[i].set_size(grad.n_rows);
     hessian_tmp[i].set_size(grad.n_rows, grad.n_rows);
 
@@ -199,10 +199,10 @@ void GP::HessianLikelihoodMeanParams(Mat<REAL> &hessian)
 
   hessian.set_size(grad.n_rows, grad.n_rows);
   hessian.fill(0);
-  for(int i=0; i < grad.n_rows; ++i) {
-    for(int j=0; j < grad.n_rows; ++j) {
+  for(unsigned int i=0; i < grad.n_rows; ++i) {
+    for(unsigned int j=0; j < grad.n_rows; ++j) {
 
-      for(int k=0; k < alpha.n_elem; ++k) {
+      for(unsigned int k=0; k < alpha.n_elem; ++k) {
 	hessian(i,j) += hessian_tmp[k](i,j)*alpha(k);
       }
 
@@ -221,20 +221,20 @@ void GP::GradLikelihoodKernelParams(Col<REAL> &grad)
 
   std::vector<Mat<REAL> > partialK(grad.n_elem);
 
-  for(int k=0; k < grad.n_elem; ++k) {
+  for(unsigned int k=0; k < grad.n_elem; ++k) {
     partialK[k].set_size(X.n_cols, X.n_cols);
   }
 
-  for(int i=0; i < X.n_cols; ++i) {
-    for(int j=0; j < X.n_cols; ++j) {
+  for(unsigned int i=0; i < X.n_cols; ++i) {
+    for(unsigned int j=0; j < X.n_cols; ++j) {
       this->kernel->Grad(grad, X.col(i), X.col(j));
-      for(int k=0; k < grad.n_elem; ++k) {
+      for(unsigned int k=0; k < grad.n_elem; ++k) {
 	partialK[k](i,j) = grad(k);
       }
     }
   }
 
-  for(int k=0; k < grad.n_elem; ++k) {
+  for(unsigned int k=0; k < grad.n_elem; ++k) {
     grad(k) = 0.5*(trans(alpha)*partialK[k]*alpha) - 0.5*trace(W*partialK[k]);
   }
 }
@@ -259,7 +259,7 @@ void GP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu)
 
   REAL mu1;
 
-  for(int i=0; i < Xs.n_cols; ++i) {
+  for(unsigned int i=0; i < Xs.n_cols; ++i) {
     this->Predict(Xs.col(i), mu1);
     if(isinf(mu1)) {
       printf("INF?!?: %f %f\n", Xs(0,i), Xs(1,i));
@@ -285,7 +285,7 @@ void GP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
 
   REAL mu1, var1;
 
-  for(int i=0; i < Xs.n_cols; ++i) {
+  for(unsigned int i=0; i < Xs.n_cols; ++i) {
     this->Predict(Xs.col(i), mu1, var1);
     mu(i) = mu1;
     var(i) = var1;
@@ -302,7 +302,7 @@ void GP::Predict(const Col<REAL> &Xs, REAL &mu)
   ComputeAlpha();
 
   Col<REAL> kstar(this->X.n_cols);
-  for(int i=0; i < this->X.n_cols; ++i)
+  for(unsigned int i=0; i < this->X.n_cols; ++i)
     kstar(i) = this->kernel->Eval(Xs, this->X.col(i));
 
   mu = dot(kstar,alpha) + this->mean->Eval(Xs);
@@ -314,7 +314,7 @@ void GP::Predict(const Col<REAL> &Xs, REAL &mu, REAL &var)
   ComputeAlpha();
 
   Col<REAL> kstar(X.n_cols);
-  for(int i=0; i < X.n_cols; ++i)
+  for(unsigned int i=0; i < X.n_cols; ++i)
     kstar(i) = this->kernel->Eval(Xs, X.col(i));
 
   mu = dot(kstar,alpha) + this->mean->Eval(Xs);
@@ -334,7 +334,7 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad)
   ComputeAlpha();
 
   Mat<REAL> dkstar(grad.n_rows, X.n_cols);
-  for(int i=0; i < X.n_cols; ++i) {
+  for(unsigned int i=0; i < X.n_cols; ++i) {
     Col<REAL> tmp;
     this->kernel->GradX(tmp, Xs, X.col(i));
     dkstar.col(i) = tmp;
@@ -342,7 +342,7 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad)
 
   this->mean->GradX(grad, Xs);
 
-  for(int i=0; i < grad.n_elem; ++i) {
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
     grad(i) += dot(dkstar.row(i), alpha);
   }
 }
@@ -358,7 +358,7 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad, Col<REAL> &vargra
 
   Col<REAL> kstar(X.n_cols);
   Mat<REAL> dkstar(grad.n_rows, X.n_cols);
-  for(int i=0; i < X.n_cols; ++i) {
+  for(unsigned int i=0; i < X.n_cols; ++i) {
     Col<REAL> tmp;
     this->kernel->GradX(tmp, Xs, X.col(i));
     dkstar.col(i) = tmp;
@@ -368,7 +368,7 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad, Col<REAL> &vargra
 
   this->mean->GradX(grad, Xs);
 
-  for(int i=0; i < grad.n_elem; ++i) {
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
     grad(i) += dot(dkstar.row(i), alpha);
   }
 
@@ -395,8 +395,8 @@ void GP::MatrixMap(Mat<REAL> &matrix, const Mat<REAL> &a, const Mat<REAL> &b)
 {
   matrix.set_size(a.n_cols, b.n_cols);
   
-  for(int i=0; i < a.n_cols; ++i) {
-    for(int j=0; j < b.n_cols; ++j) {
+  for(unsigned int i=0; i < a.n_cols; ++i) {
+    for(unsigned int j=0; j < b.n_cols; ++j) {
       REAL val = this->kernel->Eval(a.col(i), b.col(j));
       matrix(i,j) = val;
       matrix(j,i) = val;
