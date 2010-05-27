@@ -394,39 +394,160 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad, Col<REAL> &vargra
 void GP::MatrixMap(Mat<REAL> &matrix, const Mat<REAL> &a, const Mat<REAL> &b)
 {
   matrix.set_size(a.n_cols, b.n_cols);
-  
   for(unsigned int i=0; i < a.n_cols; ++i) {
     for(unsigned int j=0; j < b.n_cols; ++j) {
       REAL val = this->kernel->Eval(a.col(i), b.col(j));
       matrix(i,j) = val;
-      matrix(j,i) = val;
     }
   }
 }
 
 void GP::OptimizeNoiseParam(REAL &noise_param, int max_iterations)
 {
-  CGOptimizer opt(this);
+  CGOptimizer opt(reinterpret_cast<void*>(this));
 
   Col<REAL> noise_params(1);
   noise_params(0) = noise_param;
   
-  opt.InitializeNoise(noise_param);
+  opt.Initialize(noise_params, &f_eval_noise, &df_eval_noise, &fdf_eval_noise, 0.5, 0.1);
   opt.Optimize(noise_params, max_iterations);
 }
 
 void GP::OptimizeMeanParam(Col<REAL> &mean_param, int max_iterations)
 {
-  CGOptimizer opt(this);
+  CGOptimizer opt(reinterpret_cast<void*>(this));
 
-  opt.InitializeMean(mean_param, 1.5);
+  opt.Initialize(mean_param, &f_eval_mean, &df_eval_mean, &fdf_eval_mean, 1.5, 0.01);
   opt.Optimize(mean_param, max_iterations);
 }
 
 void GP::OptimizeKernelParam(Col<REAL> &kernel_param, int max_iterations)
 {
-  CGOptimizer opt(this);
+  CGOptimizer opt(reinterpret_cast<void*>(this));
 
-  opt.InitializeKernel(kernel_param, 20);
+  opt.Initialize(kernel_param, &f_eval_kernel, &df_eval_kernel, &fdf_eval_kernel, 20, 0.1);
   opt.Optimize(kernel_param, max_iterations);
+}
+
+double f_eval_mean(const gsl_vector *x, void *param)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+  
+  Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
+  for(unsigned int i=0; i < mean_param.n_elem; ++i) {
+    mean_param(i) = gsl_vector_get(x, i);
+  }
+
+  gp_obj->SetMeanFuncParams(mean_param);
+
+  double ret = -gp_obj->ComputeLikelihood();
+  
+  return ret;
+}
+
+void df_eval_mean(const gsl_vector *x, void *param, gsl_vector *g)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+  
+  Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
+  for(unsigned int i=0; i < mean_param.n_elem; ++i) {
+    mean_param(i) = gsl_vector_get(x, i);
+  }
+  gp_obj->SetMeanFuncParams(mean_param);
+
+  Col<REAL> grad;
+  gp_obj->GradLikelihoodMeanParams(grad);
+
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
+    gsl_vector_set(g, i, -grad(i));
+  }
+}
+
+void fdf_eval_mean(const gsl_vector *x, void *param, double *f, gsl_vector *g)
+{
+  *f = f_eval_mean(x, param);
+  df_eval_mean(x, param, g);
+}
+
+double f_eval_kernel(const gsl_vector *x, void *param)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+  
+  Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
+  for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
+    kernel_param(i) = gsl_vector_get(x, i);
+    if(kernel_param(i) < 1e-6) {
+      return 1e6;
+    }
+  }
+  
+  gp_obj->SetKernelFuncParams(kernel_param);
+
+  double ret = -gp_obj->ComputeLikelihood();
+  
+  return ret;
+}
+
+void df_eval_kernel(const gsl_vector *x, void *param, gsl_vector *g)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+  
+  Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
+  for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
+    kernel_param(i) = gsl_vector_get(x, i);
+  }
+  gp_obj->SetKernelFuncParams(kernel_param);
+
+  Col<REAL> grad;
+  gp_obj->GradLikelihoodKernelParams(grad);
+
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
+    gsl_vector_set(g, i, -grad(i));
+  }
+}
+
+void fdf_eval_kernel(const gsl_vector *x, void *param, double *f, gsl_vector *g)
+{
+  *f = f_eval_kernel(x, param);
+  df_eval_kernel(x, param, g);
+}
+
+double f_eval_noise(const gsl_vector *x, void *param)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+  
+  REAL noise_param;
+  noise_param = gsl_vector_get(x, 0);
+  if(noise_param < 1e-6) {
+    return 1e6;
+  }
+  
+  gp_obj->SetNoise(noise_param);
+
+  double ret = -gp_obj->ComputeLikelihood();
+  
+  return ret;
+}
+
+void df_eval_noise(const gsl_vector *x, void *param, gsl_vector *g)
+{
+  GP *gp_obj = reinterpret_cast<GP*>(param);
+
+  REAL noise_param;
+  noise_param = gsl_vector_get(x, 0);
+
+  gp_obj->SetNoise(noise_param);
+
+  Col<REAL> grad;
+  gp_obj->GradLikelihoodNoise(grad);
+
+  for(unsigned int i=0; i < grad.n_elem; ++i) {
+    gsl_vector_set(g, i, -grad(i));
+  }
+}
+
+void fdf_eval_noise(const gsl_vector *x, void *param, double *f, gsl_vector *g)
+{
+  *f = f_eval_noise(x, param);
+  df_eval_noise(x, param, g);
 }

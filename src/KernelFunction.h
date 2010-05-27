@@ -14,6 +14,11 @@ class KernelFunction {
   virtual void SetParams(const Col<REAL>& param) {
     this->param = param;
   }
+
+  virtual Col<REAL> GetParams() {
+    return this->param;
+  }
+
   virtual void GradX(Col<REAL> &grad, const Col<REAL>& a, const Col<REAL>& b)=0;
   int GetParamDim() { return this->param_dim; }
 

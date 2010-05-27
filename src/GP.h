@@ -8,6 +8,22 @@ using namespace arma;
 #include "KernelFunction.h"
 #include "MeanFunction.h"
 
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_multimin.h>
+
+double f_eval_mean(const gsl_vector *x, void *param);
+void df_eval_mean(const gsl_vector *x, void *param, gsl_vector *g);
+void fdf_eval_mean(const gsl_vector *x, void *param, double *f, gsl_vector *g);
+
+double f_eval_kernel(const gsl_vector *x, void *param);
+void df_eval_kernel(const gsl_vector *x, void *param, gsl_vector *g);
+void fdf_eval_kernel(const gsl_vector *x, void *param, double *f, gsl_vector *g);
+
+double f_eval_noise(const gsl_vector *x, void *param);
+void df_eval_noise(const gsl_vector *x, void *param, gsl_vector *g);
+void fdf_eval_noise(const gsl_vector *x, void *param, double *f, gsl_vector *g);
+
 class GP {
  public:
   GP(REAL s2_n, KernelFunction *kernel, MeanFunction *mean);
@@ -45,7 +61,7 @@ class GP {
   inline KernelFunction *GetKernelFunction() { return this->kernel; }
   inline MeanFunction *GetMeanFunction() { return this->mean; }
   
- private:
+ protected:
   KernelFunction *kernel;
   MeanFunction *mean;
   Mat<REAL> K;
