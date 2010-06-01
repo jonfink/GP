@@ -141,9 +141,7 @@ void GP::ComputeW()
     cholbacksub(W, this->L, eye<Mat<REAL> >(K.n_rows, K.n_cols));
     this->need_to_compute_w = false;
   }
-
 }
-
 
 REAL GP::ComputeLikelihood()
 {
