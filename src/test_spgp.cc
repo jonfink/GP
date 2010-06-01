@@ -81,7 +81,7 @@ int main(int argc, char **argv)
   */
   cout << "Log-likelihood: " << gp.ComputeLikelihood() << endl;
 
-  gp.OptimizePseudoInputs(Xb, 20);
+  gp.OptimizePseudoInputs(Xb, 20, 10, 0.001);
   gp.SetPseudoInputs(Xb);  
   cout << "Xb*:\n" << Xb << endl;
 
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
   }
   out.close();
 
-  gp.OptimizePseudoInputs(Xb, 20);
+  gp.OptimizePseudoInputs(Xb, 20, 10, 0.001);
   gp.SetPseudoInputs(Xb);  
 
   gp.Predict(Xs, mu, var);

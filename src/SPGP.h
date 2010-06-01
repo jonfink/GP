@@ -13,6 +13,7 @@ class SPGP : public GP
   SPGP(REAL s2_n, KernelFunction *kernel, MeanFunction *mean);
   virtual ~SPGP();
 
+void SetDel(REAL del);
   void SetKernelFuncParams(const Col<REAL>& param);
   void SetMeanFuncParams(const Col<REAL>& param);
 
@@ -28,7 +29,7 @@ class SPGP : public GP
   void ComputeBet();
 
   void GradLikelihoodPseudoInputs(Mat<REAL> &grad);
-  void OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations=10);
+void OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations, double step, double eps);
   
   REAL ComputeLikelihood();
 

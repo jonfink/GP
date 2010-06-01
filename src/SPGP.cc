@@ -18,6 +18,12 @@ SPGP::~SPGP()
 }
 
 void SPGP::
+SetDel(REAL del)
+{
+  this->del = del;
+}
+
+void SPGP::
 SetKernelFuncParams(const Col<REAL>& param)
 {
 
@@ -162,7 +168,11 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu)
   solve_tri(lmst, Lm, lst, false);
   //lmst.print("lmst");
 
-  mu = trans(bet*lmst);
+  Row<REAL> meanxs(Xs.n_cols);
+  for(unsigned int i=0; i < Xs.n_cols; ++i)
+    meanxs(i) = this->mean->Eval(Xs.col(i));
+
+  mu = trans(bet*lmst) + meanxs;
 }
 
 void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
@@ -181,8 +191,12 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
     solve_tri(lmst, Lm, lst, false);
   //lmst.print("lmst");
 
+  Row<REAL> meanxs(Xs.n_cols);
+  for(unsigned int i=0; i < Xs.n_cols; ++i)
+    meanxs(i) = this->mean->Eval(Xs.col(i));
+
     //printf("trans(bet): %d x %d, lmst: %d x %d \n", bet.n_cols, bet.n_rows, lmst.n_rows, lmst.n_cols);
-    mu = trans(bet)*lmst;
+  mu = trans(bet)*lmst + meanxs;
 
     //mu.print("mu");
 
@@ -274,7 +288,7 @@ void SPGP::GetPseudoInputs(Mat<REAL> &Xb)
 }
 
 void SPGP::
-OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations)
+OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations, double step, double eps)
 {
   CGOptimizer opt(reinterpret_cast<void*>(this));
 
@@ -286,7 +300,7 @@ OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations)
     }
   }
   
-  opt.Initialize(opt_state, &f_eval_pi, &df_eval_pi, &fdf_eval_pi, 10.0, 0.001);
+  opt.Initialize(opt_state, &f_eval_pi, &df_eval_pi, &fdf_eval_pi, step, eps);
   opt.Optimize(opt_state, max_iterations);
 
   idx=0;
