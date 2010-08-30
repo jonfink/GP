@@ -31,4 +31,13 @@ class SqExpKernel : public KernelFunction {
   void GradX(Col<REAL> &grad, const Col<REAL>& a, const Col<REAL>& b);
 };
 
+class SqExpCircleKernel : public KernelFunction {
+ public:
+  SqExpCircleKernel();
+  SqExpCircleKernel(const Col<REAL>& param);
+  REAL Eval(const Col<REAL>& a, const Col<REAL> &b);
+  void Grad(Col<REAL> &grad, const Col<REAL>& a, const Col<REAL>& b);
+  void GradX(Col<REAL> &grad, const Col<REAL>& a, const Col<REAL>& b);
+};
+
 #endif
