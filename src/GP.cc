@@ -235,7 +235,8 @@ void GP::GradLikelihoodKernelParams(Col<REAL> &grad)
   }
 
   for(unsigned int k=0; k < grad.n_elem; ++k) {
-    grad(k) = 0.5*(trans(alpha)*partialK[k]*alpha) - 0.5*trace(W*partialK[k]);
+    Mat<REAL> tmp = trans(alpha)*partialK[k]*alpha;
+    grad(k) = 0.5*(tmp(0,0)) - 0.5*trace(W*partialK[k]);
   }
 }
 
@@ -245,7 +246,8 @@ void GP::GradLikelihoodNoise(Col<REAL> &grad)
   grad.set_size(1);
 
   Mat<REAL> partialK = 2*this->s2_n*eye<Mat<REAL> >(this->X.n_cols, this->X.n_cols);
-  grad(0) = 0.5*(trans(alpha)*partialK*alpha) - 0.5*trace(W*partialK);
+  Mat<REAL> tmp = trans(alpha)*partialK*alpha;
+  grad(0) = 0.5*(tmp(0,0)) - 0.5*trace(W*partialK);
 }
 
 void GP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu)
