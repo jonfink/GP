@@ -1,11 +1,11 @@
 #include "MeanFunction.h"
 
-void MeanFunction::SetParams(const Col<REAL>& param) 
+void MeanFunction::SetParams(const Col<REAL>& param)
 {
   this->param = param;
 }
 
-Col<REAL> MeanFunction::GetParams() 
+Col<REAL> MeanFunction::GetParams()
 {
   return this->param;
 }
@@ -30,6 +30,9 @@ ConstantMean::ConstantMean()
 ConstantMean::ConstantMean(const Col<REAL>& param)
 {
   this->SetParams(param);
+  this->param_dim = param.n_elem;
+  this->grad_mult.set_size(param.n_elem);
+  this->grad_mult.fill(1.0);
 }
 
 REAL ConstantMean::Eval(const Col<REAL>& x)
@@ -54,7 +57,7 @@ void ConstantMean::Hessian(Mat<REAL> &hessian, const Col<REAL>& x)
 void ConstantMean::GradX(Col<REAL> &grad, const Col<REAL>& x)
 {
   grad.set_size(x.n_elem);
-  grad.fill(0);  
+  grad.fill(0);
 }
 
 LogMean::LogMean()
@@ -106,11 +109,11 @@ void LogMean::Grad(Col<REAL> &grad, const Col<REAL>& x)
   */
 
   grad(0)=1;
-  
+
   grad(1)=(-10*log(sqrt(pow(source(0) - x(0),2) + pow(source(1) - x(1),2))))/log(10);
-  
+
   grad(2)=(-10*param(1)*(source(0) - x(0)))/((pow(source(0) - x(0),2) + pow(source(1) - x(1),2))*log(10));
-  
+
   grad(3)=(-10*param(1)*(source(1) - x(1)))/((pow(source(0) - x(0),2) + pow(source(1) - x(1),2))*log(10));
 
   grad = grad % this->grad_mult;
@@ -121,7 +124,7 @@ void LogMean::Hessian(Mat<REAL> &H, const Col<REAL>& x)
   H.set_size(param.n_elem, param.n_elem);
 
 
-  /*  
+  /*
   // d[grad(0)]/d[param(i)]
   H(0,0) = 0;
   H(0,1) = 0;
@@ -155,7 +158,7 @@ void LogMean::Hessian(Mat<REAL> &H, const Col<REAL>& x)
   H(3,2) = -20*param(1)*(param(2)-x(0))*(param(3)-x(1))/
     pow(((param(2)-x(0))*(param(2)-x(0)) + (param(3)-x(1))*(param(3)-x(1))),2);
   H(3,3) = 10*param(1)*(pow(param(2)-x(0),2) - pow(param(3)-x(1),2))/
-    pow(((param(2)-x(0))*(param(2)-x(0)) + (param(3)-x(1))*(param(3)-x(1))),2);    
+    pow(((param(2)-x(0))*(param(2)-x(0)) + (param(3)-x(1))*(param(3)-x(1))),2);
 
   */
 
