@@ -3,6 +3,7 @@ using namespace std;
 
 #include "SPGP.h"
 #include "CGOptimizer.h"
+#include "armadillo_backsub.h"
 
 SPGP::SPGP(REAL s2_n, KernelFunction *kernel, MeanFunction *mean)
   : GP(s2_n, kernel, mean)
@@ -81,9 +82,8 @@ ComputeLm()
   L = trans(chol(kxbxb + del*eye<Mat<REAL> >(kxbxb.n_cols, kxbxb.n_cols)));
   //L.print("L: ");
 
-  // solve_tri(V, L, kxbx, false);
-  solve(V, trimatu(L), kxbx);
-
+  solve_tri(V, L, kxbx, false);
+  
   //V.print("V: ");
   //V = trans(V);
 
@@ -118,8 +118,7 @@ ComputeBet()
   Mat<REAL> tmp = V*ytmp;
   //tmp.print("V*ytmp");
 
-  // solve_tri(bet, Lm, V*ytmp, false);
-  solve(bet, trimatu(Lm), V*ytmp);
+  solve_tri(bet, Lm, V*ytmp, false);
 
   //bet.print("bet");
 }
@@ -188,12 +187,10 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
   MatrixMap(kstar, Xb, Xs);
   //kstar.print("kstar");
   Mat<REAL> lst;
-  // solve_tri(lst, L, kstar, false);
-  solve(lst, trimatu(L), kstar);
+  solve_tri(lst, L, kstar, false);
   //lst.print("lst");
   Mat<REAL> lmst;
-  // solve_tri(lmst, Lm, lst, false);
-  solve(lmst, trimatu(Lm), lst);
+  solve_tri(lmst, Lm, lst, false);
   //lmst.print("lmst");
 
   Row<REAL> meanxs(Xs.n_cols);

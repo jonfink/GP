@@ -12,7 +12,8 @@ add_library(${PROJECT_NAME}
   src/GP.cc
   src/KernelFunction.cc
   src/MeanFunction.cc
-  src/CGOptimizer.cc)
+  src/CGOptimizer.cc
+  src/armadillo_backsub.cc)
 target_link_libraries(${PROJECT_NAME}
   ${ARMADILLO_LIBRARIES}
   gsl)
@@ -23,11 +24,14 @@ endif()
 
 add_library(SPGP
   src/SPGP.cc
-  src/GP.cc
-  src/KernelFunction.cc
-  src/MeanFunction.cc
-  src/CGOptimizer.cc)
+  # src/GP.cc
+  # src/KernelFunction.cc
+  # src/MeanFunction.cc
+  # src/CGOptimizer.cc
+  # src/armadillo_backsub.cc
+  )
 target_link_libraries(SPGP
+  ${PROJECT_NAME}
   ${ARMADILLO_LIBRARIES}
   gsl)
 if(APPLE)
@@ -43,7 +47,7 @@ if(APPLE)
 endif()
 
 add_executable(test_spgp src/test_spgp.cc)
-target_link_libraries(test_spgp ${ARMADILLO_LIBRARIES} SPGP)
+target_link_libraries(test_spgp ${ARMADILLO_LIBRARIES} ${PROJECT_NAME} SPGP)
 if(APPLE)
   set_target_properties(test_spgp
     PROPERTIES LINK_FLAGS "${LINK_FLAGS} -framework Accelerate")

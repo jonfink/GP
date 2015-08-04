@@ -4,8 +4,8 @@ using namespace std;
 //#define BENCHMARK
 
 #include "GP.h"
-
 #include "CGOptimizer.h"
+#include "armadillo_backsub.h"
 
 GP::GP(REAL s2_n, KernelFunction *kernel, MeanFunction *mean)
 {
@@ -125,8 +125,7 @@ void GP::ComputeAlpha()
     timer.tic();
 #endif
     this->alpha.set_size(y.n_cols);
-    // cholbacksub(alpha, this->L, trans(this->y - this->meanvals));
-    solve(alpha, trimatu(this->L), trans(this->y - this->meanvals));
+    cholbacksub(alpha, this->L, trans(this->y - this->meanvals));
     this->need_to_compute_alpha = false;
 #ifdef BENCHMARK
     printf("%f seconds to compute alpha\n", timer.toc());
@@ -139,8 +138,7 @@ void GP::ComputeW()
   if(this->need_to_compute_w) {
     ComputeChol();
     this->W.set_size(this->L.n_rows, this->L.n_cols);
-    // cholbacksub(W, this->L, eye<Mat<REAL> >(K.n_rows, K.n_cols));
-    solve(W, trimatu(this->L), eye<Mat<REAL> >(K.n_rows, K.n_cols));
+    cholbacksub(W, this->L, eye<Mat<REAL> >(K.n_rows, K.n_cols));
     this->need_to_compute_w = false;
   }
 }
@@ -203,7 +201,7 @@ void GP::HessianLikelihoodMeanParams(Mat<REAL> &hessian)
     for(unsigned int j=0; j < grad.n_rows; ++j) {
 
       for(unsigned int k=0; k < alpha.n_elem; ++k) {
-	hessian(i,j) += hessian_tmp[k](i,j)*alpha(k);
+        hessian(i,j) += hessian_tmp[k](i,j)*alpha(k);
       }
 
       hessian(i,j) -= dot(grad_all.row(i), this->W*trans(grad_all.row(j)));
@@ -229,7 +227,7 @@ void GP::GradLikelihoodKernelParams(Col<REAL> &grad)
     for(unsigned int j=0; j < X.n_cols; ++j) {
       this->kernel->Grad(grad, X.col(i), X.col(j));
       for(unsigned int k=0; k < grad.n_elem; ++k) {
-	partialK[k](i,j) = grad(k);
+        partialK[k](i,j) = grad(k);
       }
     }
   }
@@ -253,8 +251,8 @@ void GP::GradLikelihoodNoise(Col<REAL> &grad)
 void GP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu)
 {
 #ifdef BENCHMARK
-    wall_clock timer;
-    timer.tic();
+  wall_clock timer;
+  timer.tic();
 #endif
 
   mu.set_size(Xs.n_cols);
@@ -278,8 +276,8 @@ void GP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
 {
 
 #ifdef BENCHMARK
-    wall_clock timer;
-    timer.tic();
+  wall_clock timer;
+  timer.tic();
 #endif
 
   mu.set_size(Xs.n_cols);
@@ -323,8 +321,7 @@ void GP::Predict(const Col<REAL> &Xs, REAL &mu, REAL &var)
 
   // trans(L) is LOWER TRIANGULAR
   Col<REAL> v(kstar.n_elem);
-  // solve_tri(v, trans(L), kstar, false);
-  solve(v, trimatu(trans(L)), kstar);
+  solve_tri(v, trans(L), kstar, false);
   REAL kxsxs = this->kernel->Eval(Xs, Xs);
   var = kxsxs - dot(v, v) + this->s2_n;
 }
@@ -378,15 +375,12 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad, Col<REAL> &vargra
   Col<REAL> v(kstar.n_elem);
   Col<REAL> tmp(kstar.n_elem);
   Mat<REAL> dv(kstar.n_elem, grad.n_elem);
-  // solve_tri(v, trans(L), kstar, false);
-  solve(v, trimatu(trans(L)), kstar);
-
+  solve_tri(v, trans(L), kstar, false);
+  
   //printf("About to solve for dv\n");
-  // solve_tri(tmp, trans(L), trans(dkstar.row(0)), false);
-  solve(tmp, trimatu(trans(L)), trans(dkstar.row(0)));
+  solve_tri(tmp, trans(L), trans(dkstar.row(0)), false);
   dv.col(0) = tmp;
-  // solve_tri(tmp, trans(L), trans(dkstar.row(1)), false);
-  solve(tmp, trimatu(trans(L)), trans(dkstar.row(1)));
+  solve_tri(tmp, trans(L), trans(dkstar.row(1)), false);
   dv.col(1) = tmp;
   //dv.print("dv: ");
 
@@ -557,3 +551,4 @@ void fdf_eval_noise(const gsl_vector *x, void *param, double *f, gsl_vector *g)
   *f = f_eval_noise(x, param);
   df_eval_noise(x, param, g);
 }
+
