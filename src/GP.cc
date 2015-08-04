@@ -125,7 +125,8 @@ void GP::ComputeAlpha()
     timer.tic();
 #endif
     this->alpha.set_size(y.n_cols);
-    cholbacksub(alpha, this->L, trans(this->y - this->meanvals));
+    // cholbacksub(alpha, this->L, trans(this->y - this->meanvals));
+    solve(alpha, trimatu(this->L), trans(this->y - this->meanvals));
     this->need_to_compute_alpha = false;
 #ifdef BENCHMARK
     printf("%f seconds to compute alpha\n", timer.toc());
@@ -138,7 +139,8 @@ void GP::ComputeW()
   if(this->need_to_compute_w) {
     ComputeChol();
     this->W.set_size(this->L.n_rows, this->L.n_cols);
-    cholbacksub(W, this->L, eye<Mat<REAL> >(K.n_rows, K.n_cols));
+    // cholbacksub(W, this->L, eye<Mat<REAL> >(K.n_rows, K.n_cols));
+    solve(W, trimatu(this->L), eye<Mat<REAL> >(K.n_rows, K.n_cols));
     this->need_to_compute_w = false;
   }
 }
@@ -321,7 +323,8 @@ void GP::Predict(const Col<REAL> &Xs, REAL &mu, REAL &var)
 
   // trans(L) is LOWER TRIANGULAR
   Col<REAL> v(kstar.n_elem);
-  solve_tri(v, trans(L), kstar, false);
+  // solve_tri(v, trans(L), kstar, false);
+  solve(v, trimatu(trans(L)), kstar);
   REAL kxsxs = this->kernel->Eval(Xs, Xs);
   var = kxsxs - dot(v, v) + this->s2_n;
 }
@@ -375,12 +378,15 @@ void GP::PredictGradient(const Col<REAL> &Xs, Col<REAL> &grad, Col<REAL> &vargra
   Col<REAL> v(kstar.n_elem);
   Col<REAL> tmp(kstar.n_elem);
   Mat<REAL> dv(kstar.n_elem, grad.n_elem);
-  solve_tri(v, trans(L), kstar, false);
+  // solve_tri(v, trans(L), kstar, false);
+  solve(v, trimatu(trans(L)), kstar);
 
   //printf("About to solve for dv\n");
-  solve_tri(tmp, trans(L), trans(dkstar.row(0)), false);
+  // solve_tri(tmp, trans(L), trans(dkstar.row(0)), false);
+  solve(tmp, trimatu(trans(L)), trans(dkstar.row(0)));
   dv.col(0) = tmp;
-  solve_tri(tmp, trans(L), trans(dkstar.row(1)), false);
+  // solve_tri(tmp, trans(L), trans(dkstar.row(1)), false);
+  solve(tmp, trimatu(trans(L)), trans(dkstar.row(1)));
   dv.col(1) = tmp;
   //dv.print("dv: ");
 
@@ -408,7 +414,7 @@ void GP::OptimizeNoiseParam(REAL &noise_param, int max_iterations)
 
   Col<REAL> noise_params(1);
   noise_params(0) = noise_param;
-  
+
   opt.Initialize(noise_params, &f_eval_noise, &df_eval_noise, &fdf_eval_noise, 0.5, 0.1);
   opt.Optimize(noise_params, max_iterations);
 }
@@ -432,7 +438,7 @@ void GP::OptimizeKernelParam(Col<REAL> &kernel_param, int max_iterations)
 double f_eval_mean(const gsl_vector *x, void *param)
 {
   GP *gp_obj = reinterpret_cast<GP*>(param);
-  
+
   Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
   for(unsigned int i=0; i < mean_param.n_elem; ++i) {
     mean_param(i) = gsl_vector_get(x, i);
@@ -441,14 +447,14 @@ double f_eval_mean(const gsl_vector *x, void *param)
   gp_obj->SetMeanFuncParams(mean_param);
 
   double ret = -gp_obj->ComputeLikelihood();
-  
+
   return ret;
 }
 
 void df_eval_mean(const gsl_vector *x, void *param, gsl_vector *g)
 {
   GP *gp_obj = reinterpret_cast<GP*>(param);
-  
+
   Col<REAL> mean_param(gp_obj->GetMeanFunction()->GetParamDim());
   for(unsigned int i=0; i < mean_param.n_elem; ++i) {
     mean_param(i) = gsl_vector_get(x, i);
@@ -472,7 +478,7 @@ void fdf_eval_mean(const gsl_vector *x, void *param, double *f, gsl_vector *g)
 double f_eval_kernel(const gsl_vector *x, void *param)
 {
   GP *gp_obj = reinterpret_cast<GP*>(param);
-  
+
   Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
   for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
     kernel_param(i) = gsl_vector_get(x, i);
@@ -480,18 +486,18 @@ double f_eval_kernel(const gsl_vector *x, void *param)
       return 1e6;
     }
   }
-  
+
   gp_obj->SetKernelFuncParams(kernel_param);
 
   double ret = -gp_obj->ComputeLikelihood();
-  
+
   return ret;
 }
 
 void df_eval_kernel(const gsl_vector *x, void *param, gsl_vector *g)
 {
   GP *gp_obj = reinterpret_cast<GP*>(param);
-  
+
   Col<REAL> kernel_param(gp_obj->GetKernelFunction()->GetParamDim());
   for(unsigned int i=0; i < kernel_param.n_elem; ++i) {
     kernel_param(i) = gsl_vector_get(x, i);
@@ -515,17 +521,17 @@ void fdf_eval_kernel(const gsl_vector *x, void *param, double *f, gsl_vector *g)
 double f_eval_noise(const gsl_vector *x, void *param)
 {
   GP *gp_obj = reinterpret_cast<GP*>(param);
-  
+
   REAL noise_param;
   noise_param = gsl_vector_get(x, 0);
   if(noise_param < 1e-6) {
     return 1e6;
   }
-  
+
   gp_obj->SetNoise(noise_param);
 
   double ret = -gp_obj->ComputeLikelihood();
-  
+
   return ret;
 }
 

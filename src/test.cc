@@ -10,7 +10,7 @@ int main(int argc, char **argv)
   ConstantMean mean("10");
   GP gp(0.1, &kernel, &mean);
 
-  Mat<REAL> X(1,1000);
+  Mat<REAL> X(1,10);
   Row<REAL> y;
   y.set_size(X.n_cols);
 

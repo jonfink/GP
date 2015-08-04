@@ -76,12 +76,14 @@ ComputeLm()
 
   //kxbx.print("kxbx: ");
   //kxbxb.print("kxbxb: ");
-  
+
   //printf("Computing L\n");
   L = trans(chol(kxbxb + del*eye<Mat<REAL> >(kxbxb.n_cols, kxbxb.n_cols)));
   //L.print("L: ");
 
-  solve_tri(V, L, kxbx, false);
+  // solve_tri(V, L, kxbx, false);
+  solve(V, trimatu(L), kxbx);
+
   //V.print("V: ");
   //V = trans(V);
 
@@ -115,10 +117,11 @@ ComputeBet()
   //bet.print("bet (init)");
   Mat<REAL> tmp = V*ytmp;
   //tmp.print("V*ytmp");
-  solve_tri(bet, Lm, V*ytmp, false);
-  //bet.print("bet");
 
-  
+  // solve_tri(bet, Lm, V*ytmp, false);
+  solve(bet, trimatu(Lm), V*ytmp);
+
+  //bet.print("bet");
 }
 
 REAL SPGP::ComputeLikelihood()
@@ -137,10 +140,10 @@ REAL SPGP::ComputeLikelihood()
   tmp = (dot(y,y) - dot(bet, bet) + sum(log(ep)))/2;
   //tmp.print("(dot(y,y) - dot(bet, bet) + sum(log(ep)))/2");
 
-  loglikelihood += tmp(0,0);  
+  loglikelihood += tmp(0,0);
 
   /*
-  loglikelihood = sum(log(Lm.diag())) + 
+  loglikelihood = sum(log(Lm.diag())) +
     (X.n_cols - Xb.n_cols)/2*log(s2_n) +
     (dot(y,y) - dot(bet, bet) + sum(log(ep)))/2 +
     0.5*X.n_cols*log(2*Math<REAL>::pi());
@@ -162,10 +165,10 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu)
   MatrixMap(kstar, Xb, Xs);
   //kstar.print("kstar");
   Mat<REAL> lst;
-  solve_tri(lst, L, kstar, false);
+  solve(lst, trimatu(L), kstar);
   //lst.print("lst");
   Mat<REAL> lmst;
-  solve_tri(lmst, Lm, lst, false);
+  solve(lmst, trimatu(Lm), lst);
   //lmst.print("lmst");
 
   Row<REAL> meanxs(Xs.n_cols);
@@ -185,10 +188,12 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
   MatrixMap(kstar, Xb, Xs);
   //kstar.print("kstar");
   Mat<REAL> lst;
-    solve_tri(lst, L, kstar, false);
+  // solve_tri(lst, L, kstar, false);
+  solve(lst, trimatu(L), kstar);
   //lst.print("lst");
   Mat<REAL> lmst;
-    solve_tri(lmst, Lm, lst, false);
+  // solve_tri(lmst, Lm, lst, false);
+  solve(lmst, trimatu(Lm), lst);
   //lmst.print("lmst");
 
   Row<REAL> meanxs(Xs.n_cols);
@@ -202,8 +207,8 @@ void SPGP::Predict(const Mat<REAL> &Xs, Row<REAL> &mu, Row<REAL> &var)
 
   Col<REAL> tmp(this->dim);
   tmp.zeros();
-  var = this->kernel->Eval(tmp, tmp) - 
-    sum(lst % lst) + 
+  var = this->kernel->Eval(tmp, tmp) -
+    sum(lst % lst) +
     s2_n*sum(lmst % lmst);
 }
 
@@ -237,25 +242,25 @@ GradLikelihoodPseudoInputs(Mat<REAL> &grad)
   K = K / (repmat(trans(sqrt(ep)), n, 1));
 
   Mat<REAL> invLmV;
-  solve_tri(invLmV, Lm, V);
+  solve(invLmV, trimatu(Lm), V);
 
   Mat<REAL> Lt = L*Lm;
-  Mat<REAL> B1; solve_tri(B1, trans(Lt), invLmV, true);
-  Col<REAL> b1; solve_tri(b1, trans(Lt), bet, true);
-  Mat<REAL> invLV; solve_tri(invLV, trans(L), V, true);
+  Mat<REAL> B1; solve(B1, trimatl(trans(Lt)), invLmV);
+  Col<REAL> b1; solve(b1, trimatl(trans(Lt)), bet);
+  Mat<REAL> invLV; solve(invLV, trimatl(trans(L)), V);
   Mat<REAL> invL = inv(L);
   Mat<REAL> invQ = trans(invL)*invL;
   Mat<REAL> invLt = inv(Lt);
   Mat<REAL> invA = trans(invLt)*invLt;
 
-  Col<REAL> mu; solve_tri(mu, trans(Lm), bet, true); mu = trans(trans(mu)*V);
+  Col<REAL> mu; solve(mu, trimatl(trans(Lm)), bet); mu = trans(trans(mu)*V);
   Col<REAL> sumVsq = trans(sum(V%V));
 
-  Col<REAL> bigsum = trans(y) % trans((trans(bet)*invLmV))/s2_n - 
+  Col<REAL> bigsum = trans(y) % trans((trans(bet)*invLmV))/s2_n -
     trans(sum(invLmV % invLmV))/2 -
     (trans(y % y) + mu % mu)/2/s2_n + 0.5;
 
-  Mat<REAL> TT = invLV*(trans(invLV)%repmat(bigsum, 1, n));				    
+  Mat<REAL> TT = invLV*(trans(invLV)%repmat(bigsum, 1, n));
 
   Mat<REAL> dnnQ, dNnK, epdot;
   Col<REAL> epPmod;
@@ -299,7 +304,7 @@ OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations, double step, d
       opt_state(idx++) = pseudoinputs(i, j);
     }
   }
-  
+
   opt.Initialize(opt_state, &f_eval_pi, &df_eval_pi, &fdf_eval_pi, step, eps);
   opt.Optimize(opt_state, max_iterations);
 
@@ -314,7 +319,7 @@ OptimizePseudoInputs(Mat<REAL> &pseudoinputs, int max_iterations, double step, d
 double f_eval_pi(const gsl_vector *x, void *param)
 {
   SPGP *gp_obj = reinterpret_cast<SPGP*>(param);
-  
+
   Mat<REAL> pinput; gp_obj->GetPseudoInputs(pinput);
   unsigned int dim = pinput.n_cols;
   unsigned int n = pinput.n_rows;
@@ -323,13 +328,13 @@ double f_eval_pi(const gsl_vector *x, void *param)
   for(unsigned int i=0; i < n; ++i) {
     for(unsigned int j=0; j < dim; ++j) {
       pinput(i, j) = gsl_vector_get(x, k++);
-    } 
+    }
   }
 
   gp_obj->SetPseudoInputs(pinput);
 
   double ret = gp_obj->ComputeLikelihood();
-  
+
   return ret;
 }
 
@@ -337,7 +342,7 @@ void df_eval_pi(const gsl_vector *x, void *param, gsl_vector *g)
 {
 
   SPGP *gp_obj = reinterpret_cast<SPGP*>(param);
-  
+
   Mat<REAL> pinput; gp_obj->GetPseudoInputs(pinput);
   unsigned int dim = pinput.n_cols;
   unsigned int n = pinput.n_rows;
@@ -346,7 +351,7 @@ void df_eval_pi(const gsl_vector *x, void *param, gsl_vector *g)
   for(unsigned int i=0; i < n; ++i) {
     for(unsigned int j=0; j < dim; ++j) {
       pinput(i, j) = gsl_vector_get(x, k++);
-    } 
+    }
   }
 
   gp_obj->SetPseudoInputs(pinput);
