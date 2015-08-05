@@ -1,6 +1,6 @@
 #include "armadillo_backsub.h"
 
-#include </System/Library/Frameworks/Accelerate.framework/Headers/Accelerate.h>
+#include <clapack.h>
 
 namespace arma
 {

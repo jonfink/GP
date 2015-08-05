@@ -4,8 +4,13 @@ set(CMAKE_BUILD_TYPE Debug)
 
 find_package(ARMADILLO REQUIRED)
 
+find_path(LAPACK_HEADERS
+  clapack.h
+  HINTS /System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers/ /usr/include/atlas/)
+
 include_directories(
- ${ARMADILLO_INCLUDE_DIRS})
+  ${LAPACK_HEADERS}
+  ${ARMADILLO_INCLUDE_DIRS})
 
 #common commands for building c++ executables and libraries
 add_library(${PROJECT_NAME}
@@ -24,11 +29,6 @@ endif()
 
 add_library(SPGP
   src/SPGP.cc
-  # src/GP.cc
-  # src/KernelFunction.cc
-  # src/MeanFunction.cc
-  # src/CGOptimizer.cc
-  # src/armadillo_backsub.cc
   )
 target_link_libraries(SPGP
   ${PROJECT_NAME}
