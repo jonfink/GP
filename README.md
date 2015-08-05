@@ -9,14 +9,13 @@ Dependencies
 * [Armadillo](http://arma.sourceforge.net/) is a C++ linear algebra library with LAPACK integration.
 * [Gnu Scientific Library (GSL)](http://www.gnu.org/software/gsl/) provides some non-linear optimization routines for doing hyper-parameter estimation.
 
-### Note
-The library was originally developed as a [ROS](www.ros.org) package.  Though it does not depend explicitly on any ROS feature, the build setup still relies on having a ROS structure.
-
 Building
 --------
-As stated above, this library is currently setup to be a ROS package with dependencies handled by the ROS build system and specified in 'manifest.xml'.  As a result, building is a simple
+Standard cmake build..
 
-     $ rosmake
+     $ mkdir build && cd build
+     $ cmake ..
+     $ make
 
 Basic Usage
 -----------
